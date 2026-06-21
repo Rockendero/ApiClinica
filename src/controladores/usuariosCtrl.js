@@ -31,12 +31,28 @@ export const login = async (req, res) => {
 export const registro = async (req, res) => {
     try {
         const { usuario, clave, nombre, correo, telefono, cedula, fecha_nacimiento, tipo_sangre } = req.body
+        
+        // Verificar usuario duplicado
+        const [existeUsuario] = await conmysql.query(
+            'select id from usuarios where usuario=?', [usuario]
+        )
+        if (existeUsuario.length > 0)
+            return res.status(400).json({ mensaje: 'El usuario ya existe' })
+
+        // Verificar cédula duplicada
+        const [existeCedula] = await conmysql.query(
+            'select id from pacientes where cedula=?', [cedula]
+        )
+        if (existeCedula.length > 0)
+            return res.status(400).json({ mensaje: 'La cédula ya está registrada' })
+
         const claveEncriptada = md5(clave)
         const [result] = await conmysql.query(
             'insert into usuarios (usuario, clave, nombre, correo, telefono, rol) values (?,?,?,?,?,?)',
             [usuario, claveEncriptada, nombre, correo, telefono, 'paciente']
         )
         const usuarioId = result.insertId
+
         await conmysql.query(
             'insert into pacientes (usuario_id, cedula, fecha_nacimiento, tipo_sangre) values (?,?,?,?)',
             [usuarioId, cedula, fecha_nacimiento, tipo_sangre]
