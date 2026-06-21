@@ -67,3 +67,45 @@ export const deleteDoctor = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al eliminar doctor' })
     }
 }
+
+export const postDoctor = async (req, res) => {
+    try {
+        const { usuario, nombre, correo, telefono, especialidad_id, sueldo, horario, consultorio } = req.body
+        const clave = md5('doctor123')
+        const foto = req.file ? req.file.path : null
+
+        const [result] = await conmysql.query(
+            'insert into usuarios (usuario, clave, nombre, correo, telefono, rol) values (?,?,?,?,?,?)',
+            [usuario, clave, nombre, correo, telefono, 'doctor']
+        )
+        const usuarioId = result.insertId
+
+        await conmysql.query(
+            'insert into doctores (usuario_id, especialidad_id, sueldo, horario, consultorio, foto) values (?,?,?,?,?,?)',
+            [usuarioId, especialidad_id, sueldo, horario, consultorio, foto]
+        )
+        res.json({ mensaje: 'Doctor creado', id: usuarioId, clave_inicial: 'doctor123' })
+    } catch (error) {
+        res.status(500).json({ mensaje: 'Error al crear doctor' })
+    }
+}
+
+export const putDoctor = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { nombre, correo, telefono, especialidad_id, sueldo, horario, consultorio } = req.body
+        const foto = req.file ? req.file.path : req.body.foto
+
+        await conmysql.query(
+            'update usuarios set nombre=?, correo=?, telefono=? where id=?',
+            [nombre, correo, telefono, id]
+        )
+        await conmysql.query(
+            'update doctores set especialidad_id=?, sueldo=?, horario=?, consultorio=?, foto=? where usuario_id=?',
+            [especialidad_id, sueldo, horario, consultorio, foto, id]
+        )
+        res.json({ mensaje: 'Doctor actualizado' })
+    } catch (error) {
+        res.status(500).json({ mensaje: 'Error al actualizar doctor' })
+    }
+}
