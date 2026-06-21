@@ -22,7 +22,7 @@ export const login = async (req, res) => {
             SECRET,
             { expiresIn: '8h' }
         )
-        res.json({ token, nombre: usuarioBD.nombre, rol: usuarioBD.rol })
+        res.json({ token, nombre: usuarioBD.nombre, rol: usuarioBD.rol, id: usuarioBD.id })
     } catch (error) {
         res.status(500).json({ mensaje: 'Error en login' })
     }

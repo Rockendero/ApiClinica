@@ -4,9 +4,7 @@ import md5 from 'md5'
 export const getDoctores = async (req, res) => {
     try {
         const [result] = await conmysql.query(`
-            select u.id, u.nombre, u.correo, u.telefono,
-                   d.especialidad_id, e.nombre as especialidad,
-                   d.sueldo, d.horario, d.consultorio, d.foto
+          select u.id, u.usuario, u.nombre, u.correo, u.telefono, d.especialidad_id, e.nombre as especialidad, d.sueldo, d.horario, d.consultorio, d.foto
             from usuarios u
             inner join doctores d on u.id = d.usuario_id
             inner join especialidades e on d.especialidad_id = e.id
