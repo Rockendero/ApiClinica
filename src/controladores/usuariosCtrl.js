@@ -22,11 +22,21 @@ export const login = async (req, res) => {
             SECRET,
             { expiresIn: '8h' }
         )
-        res.json({ token, nombre: usuarioBD.nombre, rol: usuarioBD.rol, id: usuarioBD.id })
-    } catch (error) {
-        res.status(500).json({ mensaje: 'Error en login' })
-    }
-}
+        
+        // Después de crear el token, antes del res.json:
+        let paciente_id = null;
+        if (usuarioBD.rol === 'paciente') {
+        const [pacResult] = await conmysql.query(
+            'select id from pacientes where usuario_id=?', [usuarioBD.id]
+        )
+        if (pacResult.length > 0) paciente_id = pacResult[0].id
+        }
+
+        res.json({ token, nombre: usuarioBD.nombre, rol: usuarioBD.rol, id: usuarioBD.id, paciente_id })
+            } catch (error) {
+                res.status(500).json({ mensaje: 'Error en login' })
+            }
+        }
 
 export const registro = async (req, res) => {
     try {
