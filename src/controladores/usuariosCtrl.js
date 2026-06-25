@@ -7,9 +7,7 @@ const SECRET = 'clave123'
 export const login = async (req, res) => {
     try {
         const { usuario, clave } = req.body
-        const [result] = await conmysql.query(
-            'select * from usuarios where usuario = ?', [usuario]
-        )
+        const [result] = await conmysql.query('select * from usuarios where usuario = ?', [usuario])
         if (result.length <= 0)
             return res.status(401).json({ mensaje: 'Usuario no existe' })
 
@@ -22,37 +20,35 @@ export const login = async (req, res) => {
             SECRET,
             { expiresIn: '8h' }
         )
-        
-        // Después de crear el token, antes del res.json:
-        let paciente_id = null;
+
+        let paciente_id = null
+        let doctor_id = null
+
         if (usuarioBD.rol === 'paciente') {
-        const [pacResult] = await conmysql.query(
-            'select id from pacientes where usuario_id=?', [usuarioBD.id]
-        )
-        if (pacResult.length > 0) paciente_id = pacResult[0].id
+            const [pacResult] = await conmysql.query('select id from pacientes where usuario_id=?', [usuarioBD.id])
+            if (pacResult.length > 0) paciente_id = pacResult[0].id
         }
 
-        res.json({ token, nombre: usuarioBD.nombre, rol: usuarioBD.rol, id: usuarioBD.id, paciente_id })
-            } catch (error) {
-                res.status(500).json({ mensaje: 'Error en login' })
-            }
+        if (usuarioBD.rol === 'doctor') {
+            const [docResult] = await conmysql.query('select id from doctores where usuario_id=?', [usuarioBD.id])
+            if (docResult.length > 0) doctor_id = docResult[0].id
         }
+
+        res.json({ token, nombre: usuarioBD.nombre, rol: usuarioBD.rol, id: usuarioBD.id, paciente_id, doctor_id })
+    } catch (error) {
+        res.status(500).json({ mensaje: 'Error en login' })
+    }
+}
 
 export const registro = async (req, res) => {
     try {
         const { usuario, clave, nombre, correo, telefono, cedula, fecha_nacimiento, tipo_sangre } = req.body
-        
-        // Verificar usuario duplicado
-        const [existeUsuario] = await conmysql.query(
-            'select id from usuarios where usuario=?', [usuario]
-        )
+
+        const [existeUsuario] = await conmysql.query('select id from usuarios where usuario=?', [usuario])
         if (existeUsuario.length > 0)
             return res.status(400).json({ mensaje: 'El usuario ya existe' })
 
-        // Verificar cédula duplicada
-        const [existeCedula] = await conmysql.query(
-            'select id from pacientes where cedula=?', [cedula]
-        )
+        const [existeCedula] = await conmysql.query('select id from pacientes where cedula=?', [cedula])
         if (existeCedula.length > 0)
             return res.status(400).json({ mensaje: 'La cédula ya está registrada' })
 
