@@ -43,18 +43,17 @@ export const postCita = async (req, res) => {
 }
 
 export const putCita = async (req, res) => {
-    try {
-        const { id } = req.params
-        const { fecha, hora, motivo, estado, motivo_cancelacion, motivo_reagenda, cita_original_id } = req.body
-        await conmysql.query(
-            `update citas set fecha=?, hora=?, motivo=?, estado=?, 
-             motivo_cancelacion=?, motivo_reagenda=?, cita_original_id=? where id=?`,
-            [fecha, hora, motivo, estado, motivo_cancelacion, motivo_reagenda, cita_original_id, id]
-        )
+  try {
+    const { id } = req.params
+    const { fecha, hora, motivo, estado, motivo_cancelacion, motivo_reagenda, cita_original_id } = req.body
+      await conmysql.query(`update citas set fecha=IFNULL(?,fecha), hora=IFNULL(?,hora), motivo=IFNULL(?,motivo), 
+             estado=IFNULL(?,estado), motivo_cancelacion=IFNULL(?,motivo_cancelacion), 
+             motivo_reagenda=IFNULL(?,motivo_reagenda), cita_original_id=IFNULL(?,cita_original_id) where id=?`,
+            [fecha, hora, motivo, estado, motivo_cancelacion, motivo_reagenda, cita_original_id, id])
         res.json({ mensaje: 'Cita actualizada' })
-    } catch (error) {
-        res.status(500).json({ mensaje: 'Error al actualizar cita' })
-    }
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al actualizar cita' })
+  }
 }
 
 export const deleteCita = async (req, res) => {
@@ -94,11 +93,7 @@ export const getAtencion = async (req, res) => {
 
 export const marcarNoLlego = async (req, res) => {
     try {
-        await conmysql.query(`
-            update citas set estado='no_llego' 
-            where estado='pendiente' 
-            and CONCAT(fecha, ' ', hora) < NOW()
-        `)
+        await conmysql.query(` update citas set estado='no_llego'  where estado='pendiente' and DATE_ADD(CONCAT(fecha, ' ', hora), INTERVAL 30 MINUTE) < NOW()`)
         res.json({ mensaje: 'Citas actualizadas' })
     } catch (error) {
         res.status(500).json({ mensaje: 'Error' })
