@@ -25,10 +25,9 @@ export const postCita = async (req, res) => {
     try {
         const { paciente_id, doctor_id, fecha, hora, motivo } = req.body
 
-        const [existe] = await conmysql.query(
-            `select id from citas where doctor_id=? and fecha=? and hora=? and estado not in ('cancelado','no_llego')`,
-            [doctor_id, fecha, hora]
-        )
+        const [existe] = await conmysql.query(`select id from citas where doctor_id=? and fecha=? and hora=? and estado not in ('cancelado','no_llego','reagendado')`,
+          [doctor_id, fecha, hora]
+n       )
         if (existe.length > 0)
             return res.status(400).json({ mensaje: 'El doctor ya tiene una cita en ese horario' })
 
@@ -43,17 +42,25 @@ export const postCita = async (req, res) => {
 }
 
 export const putCita = async (req, res) => {
-  try {
-    const { id } = req.params
-    const { fecha, hora, motivo, estado, motivo_cancelacion, motivo_reagenda, cita_original_id } = req.body
-      await conmysql.query(`update citas set fecha=IFNULL(?,fecha), hora=IFNULL(?,hora), motivo=IFNULL(?,motivo), 
-             estado=IFNULL(?,estado), motivo_cancelacion=IFNULL(?,motivo_cancelacion), 
-             motivo_reagenda=IFNULL(?,motivo_reagenda), cita_original_id=IFNULL(?,cita_original_id) where id=?`,
-            [fecha, hora, motivo, estado, motivo_cancelacion, motivo_reagenda, cita_original_id, id])
+    try {
+      const { id } = req.params
+      const campos = req.body
+      const sets = []
+      const valores = []
+        if (campos.fecha !== undefined) { sets.push('fecha=?'); valores.push(campos.fecha) }
+        if (campos.hora !== undefined) { sets.push('hora=?'); valores.push(campos.hora) }
+        if (campos.motivo !== undefined) { sets.push('motivo=?'); valores.push(campos.motivo) }
+        if (campos.estado !== undefined) { sets.push('estado=?'); valores.push(campos.estado) }
+        if (campos.motivo_cancelacion !== undefined) { sets.push('motivo_cancelacion=?'); valores.push(campos.motivo_cancelacion) }
+        if (campos.motivo_reagenda !== undefined) { sets.push('motivo_reagenda=?'); valores.push(campos.motivo_reagenda) }
+        if (campos.cita_original_id !== undefined) { sets.push('cita_original_id=?'); valores.push(campos.cita_original_id) }
+        if (sets.length === 0) return res.status(400).json({ mensaje: 'Nada que actualizar' })
+          valores.push(id)
+          await conmysql.query(`update citas set ${sets.join(', ')} where id=?`, valores)
         res.json({ mensaje: 'Cita actualizada' })
-  } catch (error) {
-    res.status(500).json({ mensaje: 'Error al actualizar cita' })
-  }
+    } catch (error) {
+        res.status(500).json({ mensaje: 'Error al actualizar cita' })
+    }
 }
 
 export const deleteCita = async (req, res) => {
@@ -92,10 +99,10 @@ export const getAtencion = async (req, res) => {
 }
 
 export const marcarNoLlego = async (req, res) => {
-    try {
-        await conmysql.query(` update citas set estado='no_llego'  where estado='pendiente' and DATE_ADD(CONCAT(fecha, ' ', hora), INTERVAL 30 MINUTE) < NOW()`)
-        res.json({ mensaje: 'Citas actualizadas' })
-    } catch (error) {
-        res.status(500).json({ mensaje: 'Error' })
+  try {
+    await conmysql.query(`update citas set estado='no_llego' where estado in ('pendiente', 'reagendado') and DATE_ADD(CONCAT(fecha, ' ', hora), INTERVAL 30 MINUTE) < NOW()`)
+      res.json({ mensaje: 'Citas actualizadas' })
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error' })
     }
 }
