@@ -25,9 +25,8 @@ export const postCita = async (req, res) => {
     try {
         const { paciente_id, doctor_id, fecha, hora, motivo } = req.body
 
-        const [existe] = await conmysql.query(`select id from citas where doctor_id=? and fecha=? and hora=? and estado not in ('cancelado','no_llego','reagendado')`,
-          [doctor_id, fecha, hora]
-n       )
+        const [existe] = await conmysql.query(`select id from citas where doctor_id=? and fecha=? and hora=?  and estado in ('pendiente','en_curso','reagendado')`, [doctor_id, fecha, hora]
+        )
         if (existe.length > 0)
             return res.status(400).json({ mensaje: 'El doctor ya tiene una cita en ese horario' })
 
