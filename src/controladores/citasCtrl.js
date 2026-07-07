@@ -95,10 +95,14 @@ export const getAtencion = async (req, res) => {
 }
 
 export const marcarNoLlego = async (req, res) => {
-  try {
-    await conmysql.query(`update citas set estado='no_llego' where estado in ('pendiente', 'reagendado') and DATE_ADD(CONCAT(fecha, ' ', hora), INTERVAL 30 MINUTE) < NOW()`)
-      res.json({ mensaje: 'Citas actualizadas' })
-  } catch (error) {
-    res.status(500).json({ mensaje: 'Error' })
+    try {
+        await conmysql.query(`
+            update citas set estado='no_llego' 
+            where estado in ('pendiente')
+            and DATE_ADD(CONCAT(fecha, ' ', hora), INTERVAL 30 MINUTE) < CONVERT_TZ(NOW(), '+00:00', '-05:00')
+        `)
+        res.json({ mensaje: 'Citas actualizadas' })
+    } catch (error) {
+        res.status(500).json({ mensaje: 'Error' })
     }
 }
