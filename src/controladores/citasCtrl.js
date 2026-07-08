@@ -24,9 +24,25 @@ export const getCitas = async (req, res) => {
 export const postCita = async (req, res) => {
     try {
         const { paciente_id, doctor_id, fecha, hora, motivo } = req.body
-        const [existe] = await conmysql.query(`select id from citas where doctor_id=? and fecha=? and hora=? and estado in ('pendiente','en_curso')`, [doctor_id, fecha, hora])
-        if (existe.length > 0)
+
+        // Validar que el doctor no tenga otra cita en ese horario
+        const [existeDoctor] = await conmysql.query(
+            `select id from citas where doctor_id=? and fecha=? and hora=? 
+             and estado in ('pendiente','en_curso')`,
+            [doctor_id, fecha, hora]
+        )
+        if (existeDoctor.length > 0)
             return res.status(400).json({ mensaje: 'El doctor ya tiene una cita en ese horario' })
+
+        // Validar que el paciente no tenga otra cita en ese mismo día y hora
+        const [existePaciente] = await conmysql.query(
+            `select id from citas where paciente_id=? and fecha=? and hora=? 
+             and estado in ('pendiente','en_curso')`,
+            [paciente_id, fecha, hora]
+        )
+        if (existePaciente.length > 0)
+            return res.status(400).json({ mensaje: 'Ya tienes una cita agendada en ese día y hora' })
+
         const [result] = await conmysql.query(
             'insert into citas (paciente_id, doctor_id, fecha, hora, motivo, estado) values (?,?,?,?,?,?)',
             [paciente_id, doctor_id, fecha, hora, motivo, 'pendiente']
